@@ -101,6 +101,7 @@ public class NettyProtocolRegistry extends ProtocolRegistry {
 	}
 
 	private synchronized void initializeGlowstone() throws Exception {
+		GlowstoneUtil.injectPacketType();
 		Object[] protocols = enumProtocol.getEnumConstants();
 
 		// ID to Packet class maps

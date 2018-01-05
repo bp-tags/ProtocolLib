@@ -57,7 +57,7 @@ public abstract class ProtocolRegistry {
 	
 	public ProtocolRegistry() {
 		if (GlowstoneUtil.isGlowstoneServer()) {
-			enumProtocol = MinecraftReflection.getClass("net.glowstone.net.protocol.ProtocolType");
+			enumProtocol = GlowstoneUtil.getEnumProtocolClass();
 		} else {
 			enumProtocol = MinecraftReflection.getEnumProtocolClass();
 		}
