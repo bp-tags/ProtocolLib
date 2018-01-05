@@ -856,6 +856,12 @@ public class PacketType implements Serializable, Cloneable, Comparable<PacketTyp
 		String clazz = packetClass.getSimpleName();
 		PacketType type = find(map, clazz);
 		if (type == null) {
+		    if (GlowstoneUtil.isGlowstoneServer()) {
+				type = GlowstoneUtil.getPacketMapping().get(packetClass);
+				if (type != null) {
+					return type;
+				}
+            }
 			// Guess we don't support this packet :/
 			type = new PacketType(protocol, sender, packetId, -1, PROTOCOL_VERSION, clazz);
 			type.dynamic = true;

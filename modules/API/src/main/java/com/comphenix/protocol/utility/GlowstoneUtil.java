@@ -1,6 +1,9 @@
 package com.comphenix.protocol.utility;
 
 import com.comphenix.protocol.PacketType;
+import com.google.common.collect.Maps;
+
+import java.util.Map;
 
 import static com.comphenix.protocol.PacketType.*;
 import static com.comphenix.protocol.PacketType.Play.Server.*;
@@ -8,6 +11,7 @@ import static com.comphenix.protocol.PacketType.Play.Server.*;
 public class GlowstoneUtil {
     private static Boolean glowstone = null;
     private static boolean injectedPacketType = false;
+    private static Map<Class<?>, PacketType> mapping;
 
     public static boolean isGlowstoneServer() {
         if (glowstone != null) {
@@ -30,6 +34,7 @@ public class GlowstoneUtil {
             return;
         }
         injectedPacketType = true;
+        mapping = Maps.newConcurrentMap();
 
         // Handshake CLIENT
         bind(Handshake.Client.SET_PROTOCOL, "Handshake", "");
@@ -125,5 +130,10 @@ public class GlowstoneUtil {
     private static void bind(PacketType type, String className) throws ClassNotFoundException {
         Class<?> clazz = Class.forName(className);
         type.setGlowstoneClass(clazz);
+        mapping.put(clazz, type);
+    }
+
+    public static Map<Class<?>, PacketType> getPacketMapping() {
+        return mapping;
     }
 }
