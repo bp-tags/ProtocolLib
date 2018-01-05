@@ -311,9 +311,15 @@ public class InjectedServerConnection {
 	}
 
 	private void injectGlowstoneServer() {
-
+		try {
+			GlowstoneUtil.injectPacketType();
+			hasSuccess = true;
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			hasSuccess = false;
+		}
 	}
-	
+
 	private void injectServerSocket(Object container) {
 		socketInjector.inject(container);
 	}

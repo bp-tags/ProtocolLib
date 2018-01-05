@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import com.comphenix.protocol.utility.GlowstoneUtil;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.Bukkit;
 
@@ -571,6 +572,13 @@ public class PacketType implements Serializable, Cloneable, Comparable<PacketTyp
 		public String getPacketName() {
 			return WordUtils.capitalize(name().toLowerCase(Locale.ENGLISH));
 		}
+
+		public String getGlowstoneName() {
+			if (this == HANDSHAKING) {
+				return "handshake";
+			}
+			return name().toLowerCase();
+		}
 	}
 
 	/**
@@ -629,6 +637,7 @@ public class PacketType implements Serializable, Cloneable, Comparable<PacketTyp
 	private boolean forceAsync;
 
 	private boolean dynamic;
+	private Class<?> glowstoneClass;
 
 	/**
 	 * Retrieve the current packet/legacy lookup.
@@ -758,6 +767,11 @@ public class PacketType implements Serializable, Cloneable, Comparable<PacketTyp
 	}
 
 	private static String format(Protocol protocol, Sender sender, String name) {
+		if (GlowstoneUtil.isGlowstoneServer()) {
+			if (name.contains("Message"))
+				return name;
+			return String.format("%sMessage", name);
+		}
 		if (name.contains("Packet"))
 			return name;
 
@@ -1145,6 +1159,14 @@ public class PacketType implements Serializable, Cloneable, Comparable<PacketTyp
 	 */
 	public boolean isDynamic() {
 		return dynamic;
+	}
+
+	public Class<?> getGlowstoneClass() {
+		return glowstoneClass;
+	}
+
+	public void setGlowstoneClass(Class<?> glowstoneClass) {
+		this.glowstoneClass = glowstoneClass;
 	}
 
 	@Override
