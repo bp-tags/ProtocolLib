@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.comphenix.protocol.utility.GlowstoneUtil;
 import net.sf.cglib.proxy.Factory;
 
 import org.bukkit.Server;
@@ -72,6 +73,7 @@ public class InjectedServerConnection {
 	public enum ServerSocketType {
 		SERVER_CONNECTION,
 		LISTENER_THREAD,
+		GLOWSTONE
 	}
 	
 	// Used to inject net handlers
@@ -129,7 +131,12 @@ public class InjectedServerConnection {
 			hasAttempted = true;
 		else
 			return;
-		
+
+		if (GlowstoneUtil.isGlowstoneServer()) {
+			socketType = ServerSocketType.GLOWSTONE;
+			return;
+		}
+
 		if (minecraftServerField == null)
 			minecraftServerField = FuzzyReflection.fromObject(server, true).
 				getFieldByType("MinecraftServer", MinecraftReflection.getMinecraftServerClass());
@@ -179,6 +186,8 @@ public class InjectedServerConnection {
 			injectServerConnection();
 		} else if (socketType == ServerSocketType.LISTENER_THREAD) {
 			injectListenerThread();
+		} else if (socketType == ServerSocketType.GLOWSTONE) {
+			injectGlowstoneServer();
 		} else {
 			// Damn it
 			throw new IllegalStateException("Unable to detected server connection.");
@@ -299,6 +308,10 @@ public class InjectedServerConnection {
 		
 		injectIntoList(serverConnection, listField);
 		hasSuccess = true;
+	}
+
+	private void injectGlowstoneServer() {
+
 	}
 	
 	private void injectServerSocket(Object container) {

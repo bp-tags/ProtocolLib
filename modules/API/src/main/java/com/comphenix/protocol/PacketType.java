@@ -554,6 +554,20 @@ public class PacketType implements Serializable, Cloneable, Comparable<PacketTyp
 			throw new IllegalArgumentException("Unrecognized vanilla enum " + vanilla);
 		}
 
+		public static Protocol fromGlowstone(Enum<?> glowstone) {
+			String name = glowstone.name();
+
+			if ("HANDSHAKE".equals(name))
+				return HANDSHAKING;
+			if ("PLAY".equals(name))
+				return PLAY;
+			if ("STATUS".equals(name))
+				return STATUS;
+			if ("LOGIN".equals(name))
+				return LOGIN;
+			throw new IllegalArgumentException("Unrecognized Glowstone enum " + glowstone);
+		}
+
 		public String getPacketName() {
 			return WordUtils.capitalize(name().toLowerCase(Locale.ENGLISH));
 		}

@@ -1959,7 +1959,7 @@ public class MinecraftReflection {
 	 * @param className - name of the class.
 	 * @return The class.
 	 */
-	private static Class<?> getClass(String className) {
+	public static Class<?> getClass(String className) {
 		try {
 			return MinecraftReflection.class.getClassLoader().loadClass(className);
 		} catch (ClassNotFoundException e) {

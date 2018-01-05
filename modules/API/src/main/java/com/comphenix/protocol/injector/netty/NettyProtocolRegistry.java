@@ -16,17 +16,21 @@
  */
 package com.comphenix.protocol.injector.netty;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
 import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLogger;
 import com.comphenix.protocol.PacketType.Protocol;
 import com.comphenix.protocol.PacketType.Sender;
-import com.comphenix.protocol.injector.netty.ProtocolRegistry;
+import com.comphenix.protocol.ProtocolLogger;
 import com.comphenix.protocol.injector.packet.MapContainer;
+import com.comphenix.protocol.reflect.FieldUtils;
+import com.comphenix.protocol.reflect.MethodUtils;
 import com.comphenix.protocol.reflect.StructureModifier;
+import com.comphenix.protocol.utility.GlowstoneUtil;
 import com.google.common.collect.Maps;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * @author dmulloy2
@@ -40,6 +44,14 @@ public class NettyProtocolRegistry extends ProtocolRegistry {
 
 	@Override
 	protected synchronized void initialize() {
+		if (GlowstoneUtil.isGlowstoneServer()) {
+			try {
+				initializeGlowstone();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return;
+		}
 		Object[] protocols = enumProtocol.getEnumConstants();
 
 		// ID to Packet class maps
@@ -88,6 +100,61 @@ public class NettyProtocolRegistry extends ProtocolRegistry {
 		this.register = result;
 	}
 
+	private synchronized void initializeGlowstone() throws Exception {
+		Object[] protocols = enumProtocol.getEnumConstants();
+
+		// ID to Packet class maps
+		Map<Object, Map<Integer, Class<?>>> serverMaps = Maps.newLinkedHashMap();
+		Map<Object, Map<Integer, Class<?>>> clientMaps = Maps.newLinkedHashMap();
+
+		Register result = new Register();
+		for (Object protocol : protocols) {
+			// get the packets for each protocol
+			Object protocolObject = MethodUtils.invokeMethod(protocol, "getProtocol", new Object[0]);
+			Object inboundCodecService = FieldUtils.getField(protocolObject.getClass(), "inboundCodecs", true).get(protocolObject);
+			Object outboundCodecService = FieldUtils.getField(protocolObject.getClass(), "outboundCodecs", true).get(protocolObject);
+			Field messageMapField = FieldUtils.getField(inboundCodecService.getClass(), "messages", true);
+
+			// inbound (serverbound) - clientMaps
+			Map<Class<?>, ?> inMessageMapImpl = (Map<Class<?>, ?>) messageMapField.get(inboundCodecService);
+			Map<Integer, Class<?>> inMessageMap = Maps.newHashMap();
+			for (Entry<Class<?>, ?> messageReg : inMessageMapImpl.entrySet()) {
+				// key: Class<? extends Message>
+				// val: CodecRegistration -> int getOpcode
+				Object codecRegistration = messageReg.getValue();
+				int opcode = (int) MethodUtils.invokeMethod(codecRegistration, "getOpcode", new Object[0]);
+				Class<?> messageClass = messageReg.getKey();
+				inMessageMap.put(opcode, messageClass);
+			}
+			clientMaps.put(protocol, inMessageMap);
+
+			// outbound (clientbound) - serverMaps
+			Map<Class<?>, ?> outMessageMapImpl = (Map<Class<?>, ?>) messageMapField.get(outboundCodecService);
+			Map<Integer, Class<?>> outMessageMap = Maps.newHashMap();
+			for (Entry<Class<?>, ?> messageReg : outMessageMapImpl.entrySet()) {
+				// key: Class<? extends Message>
+				// val: CodecRegistration -> int getOpcode
+				Object codecRegistration = messageReg.getValue();
+				int opcode = (int) MethodUtils.invokeMethod(codecRegistration, "getOpcode", new Object[0]);
+				Class<?> messageClass = messageReg.getKey();
+				outMessageMap.put(opcode, messageClass);
+			}
+			serverMaps.put(protocol, outMessageMap);
+		}
+
+		for (Object protocol : protocols) {
+			Enum<?> enumProtocol = (Enum<?>) protocol;
+			Protocol equivalent = Protocol.fromGlowstone(enumProtocol);
+
+			// Associate known types
+			if (serverMaps.containsKey(protocol))
+				associatePackets(result, serverMaps.get(protocol), equivalent, Sender.SERVER);
+			if (clientMaps.containsKey(protocol))
+				associatePackets(result, clientMaps.get(protocol), equivalent, Sender.CLIENT);
+		}
+		this.register = result;
+	}
+
 	@Override
 	protected void associatePackets(Register register, Map<Integer, Class<?>> lookup, Protocol protocol, Sender sender) {
 		for (Entry<Integer, Class<?>> entry : lookup.entrySet()) {
@@ -101,7 +168,7 @@ public class NettyProtocolRegistry extends ProtocolRegistry {
 				if (sender == Sender.CLIENT)
 					register.clientPackets.add(type);
 			} catch (Exception ex) {
-				ProtocolLogger.debug("Encountered an exception associating packet " + type, ex);
+				ProtocolLogger.debug("Encountered an exception associating packet ", ex);
 			}
 		}
 	}

@@ -9,6 +9,7 @@ import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.PacketType.Protocol;
 import com.comphenix.protocol.PacketType.Sender;
 import com.comphenix.protocol.injector.packet.MapContainer;
+import com.comphenix.protocol.utility.GlowstoneUtil;
 import com.comphenix.protocol.utility.MinecraftReflection;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -55,7 +56,11 @@ public abstract class ProtocolRegistry {
 	protected volatile Register register;
 	
 	public ProtocolRegistry() {
-		enumProtocol = MinecraftReflection.getEnumProtocolClass();
+		if (GlowstoneUtil.isGlowstoneServer()) {
+			enumProtocol = MinecraftReflection.getClass("net.glowstone.net.protocol.ProtocolType");
+		} else {
+			enumProtocol = MinecraftReflection.getEnumProtocolClass();
+		}
 		initialize();
 	}
 	

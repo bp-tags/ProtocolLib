@@ -67,8 +67,8 @@ public class PacketRegistry {
 			return;
 		}
 
-		NETTY = new NettyProtocolRegistry();
 		INITIALIZED = true;
+		NETTY = new NettyProtocolRegistry();
 	}
 
 	/**
